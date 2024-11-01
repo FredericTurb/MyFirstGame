@@ -8,7 +8,7 @@ clock = pygame.time.Clock()
 
 pygame.mixer.init()
 pygame.mixer.music.load('./music/song1.mp3')
-pygame.mixer.music.play(loops=-1, start=0)
+pygame.mixer.music.play(loops=-1, start=4)
 
 # SCREEN INIT
 
@@ -28,6 +28,11 @@ background = pygame.transform.scale(background, (1920, 1080))
 floor = pygame.image.load('./images/floor.png')
 floor = pygame.transform.scale(floor, (1950, 400))
 
+# BACKGROUND SCROLLING 
+
+bg_x1 = 0
+bg_x2 = SCREEN_WIDTH
+
 # DISPLAY TEXT ON SCREEN
 
 pygame.font.init()
@@ -44,14 +49,14 @@ timer = pygame.time.get_ticks()
 
 player = pygame.image.load('./images/mycat.png')
 player = pygame.transform.scale(player, (350, 350))
-player_rect = player.get_rect(center=(100,850))
+player_rect = player.get_rect(center=(500,850))
 
 # VARIABLES FOR MUSIC INPUTS
 
 is_paused = False
 m_key_pressed = False
 
-l_pause = False
+l_change = 0
 l_key_pressed = True
 
 
@@ -68,18 +73,67 @@ def my_pause_music():
 
 # CHANGE MUSIC
 
+song_display = "Playing : Ministry - I'm Not An Effigy"
+text_song_surface = font_options.render(song_display, True, ORANGE)
+text_song_placement = text_song_surface.get_rect(center=(320, 50))
+
 def my_change_music():
-    global l_pause
-    if l_pause:
-        pygame.mixer.music.load('./music/song1.mp3')
-        pygame.mixer.music.play(loops=-1, start=0)
-        l_pause = False
-    else:
+    global l_change, song_display, text_song_surface, text_song_placement
+
+    if l_change == 0:
         pygame.mixer.music.load('./music/song2.mp3')
+        pygame.mixer.music.play(loops=-1, start=0)  
+        song_display = "Richie Filth - Shallow Grave"
+        text_song_surface = font_options.render(song_display, True, ORANGE)
+        text_song_placement = text_song_surface.get_rect(center=(320, 50))
+        l_change += 1
+        return
+
+    if l_change == 1:
+        pygame.mixer.music.load('./music/song3.mp3')
         pygame.mixer.music.play(loops=-1, start=0)
-        l_pause = True
+        song_display = "AgainstMe - This Killed My Ego"
+        text_song_surface = font_options.render(song_display, True, ORANGE)
+        text_song_placement = text_song_surface.get_rect(center=(320, 50))        
+        l_change += 1
+        return
+
+    if l_change == 2:
+        pygame.mixer.music.load('./music/song4.mp3')
+        pygame.mixer.music.play(loops=-1, start=0)
+        song_display = "Balvanera - How Much Does The Body Resist ?"
+        text_song_surface = font_options.render(song_display, True, ORANGE)
+        text_song_placement = text_song_surface.get_rect(center=(390, 50))          
+        l_change = 3
+        return
+    
+    if l_change == 3:
+        pygame.mixer.music.load('./music/song5.mp3')
+        pygame.mixer.music.play(loops=-1, start=4)
+        song_display = "Luidji - Gisele (Part 4)"
+        text_song_surface = font_options.render(song_display, True, ORANGE)
+        text_song_placement = text_song_surface.get_rect(center=(300, 50))          
+        l_change = 4
+        return
+    
+    if l_change == 4:
+        pygame.mixer.music.load('./music/song1.mp3')
+        pygame.mixer.music.play(loops=-1, start=2)
+        song_display = "Ministry - I'm Not An Effigy"
+        text_song_surface = font_options.render(song_display, True, ORANGE)
+        text_song_placement = text_song_surface.get_rect(center=(320, 50))          
+        l_change = 0
+        return
+
 
 going_left = False
+
+# GRAVITY
+
+GRAVITY = 2
+JUMP_VELOCITY = -30
+vertical_velocity = 20
+on_ground = True
 
 while True :
 
@@ -133,35 +187,58 @@ while True :
 # CHARACTER MOVEMENT 
 
     if key[pygame.K_q] or key[pygame.K_LEFT]:
-        player_rect.move_ip(-20, 0)
-        going_left = True
+        if player_rect.x > 0:
+            player_rect.move_ip(-30, 0)
+            going_left = True
     elif key[pygame.K_d] or key[pygame.K_RIGHT]:
-        player_rect.move_ip(20, 0)
-        going_left = False
-    
-    #elif key[pygame.K_z] or key[pygame.K_UP]:
-    #    player_rect.move_ip(0, -20)
+        if player_rect.x < 1500 :
+            player_rect.move_ip(30, 0)
+            going_left = False
 
-    #elif key[pygame.K_s] or key[pygame.K_DOWN]:
-    #    player_rect.move_ip(0, 20)
+# GRAVITY
+    if key[pygame.K_SPACE] and on_ground:
+        vertical_velocity = JUMP_VELOCITY
+        on_ground = False
 
-    #elif key[pygame.K_SPACE]:
-    #    player_rect.move_ip(0, -100)
+    vertical_velocity += GRAVITY
+    player_rect.y += vertical_velocity
 
+    if player_rect.y >= 1050 - player_rect.height:
+        player_rect.y = 1050 - player_rect.height
+        vertical_velocity = 0
+        on_ground = True
 
-    # DRAW CHARACTER, SCREEN BACKGROUND AND TEXT 
+# SCREEN SCROLLING WHEN X AXIS REACHED 
 
-    screen.blit(background, (0,0))
+    if player_rect.x >= 1300:
+        bg_x1 -= 20
+        bg_x2 -= 20
+
+    if bg_x1 <= -SCREEN_WIDTH:
+        bg_x1 = SCREEN_WIDTH
+    if bg_x2 <= -SCREEN_WIDTH:
+        bg_x2 = SCREEN_WIDTH
+
+# ADDING GRAPHICS 
+  
+    screen.blit(background,(bg_x1,0))
+    screen.blit(background,(bg_x2,0))   
     screen.blit(floor, (0, 790))
     screen.blit(text_surface, text_center)
     screen.blit(text_music_surface, text_music_placement)
     screen.blit(text_change, text_change_placement)
+    screen.blit(text_song_surface, text_song_placement)
 
+# FLIP WHEN GOING LEFT 
+    
     if going_left:
         flipped = pygame.transform.flip(player, True, False)
         screen.blit(flipped, player_rect)
     else:
         screen.blit(player, player_rect)
+
+
+
 
     pygame.display.flip()
     clock.tick(60)
