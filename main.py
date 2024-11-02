@@ -1,4 +1,4 @@
-import pygame, time, sys 
+import pygame, time, sys
 from sys import exit
 
 pygame.init()
@@ -9,6 +9,16 @@ clock = pygame.time.Clock()
 pygame.mixer.init()
 pygame.mixer.music.load('./music/song1.mp3')
 pygame.mixer.music.play(loops=-1, start=4)
+
+# JUMP SOUND 
+
+jump_sound = pygame.mixer.Sound("./music/catsound.mp3")
+jump_sound2 = pygame.mixer.Sound("./music/catsound3.mp3")
+jump_sound2.set_volume(0.2)
+dog_sound = pygame.mixer.Sound("./music/dogbark.mp3")
+
+jump_change = 0
+
 
 # SCREEN INIT
 
@@ -33,6 +43,11 @@ floor = pygame.transform.scale(floor, (1950, 400))
 bg_x1 = 0
 bg_x2 = SCREEN_WIDTH
 
+# FLOOR SCROLLING
+
+bgf_x1 = 0
+bgf_x2 = SCREEN_WIDTH
+
 # DISPLAY TEXT ON SCREEN
 
 pygame.font.init()
@@ -45,11 +60,31 @@ ORANGE = (255, 189, 48)
 
 timer = pygame.time.get_ticks()
 
-# CHARACTER INIT
+# MAIN CHARACTER INIT
 
 player = pygame.image.load('./images/mycat.png')
 player = pygame.transform.scale(player, (350, 350))
 player_rect = player.get_rect(center=(500,850))
+
+# DOG ENEMY INIT
+
+# FIRST DOG
+enemy = pygame.image.load('./images/mydog.png')
+enemy = pygame.transform.scale(enemy,(260, 240))
+flipped_enemy = pygame.transform.flip(enemy, True, False)
+enemy_rect = flipped_enemy.get_rect(center=(2000, 915))
+
+# SECOND DOG RIGHT
+
+second_enemy = pygame.image.load('./images/mydog.png')
+second_enemy = pygame.transform.scale(second_enemy,(160, 200))
+second_flipped_enemy = pygame.transform.flip(second_enemy, True, False)
+second_enemy_rect = second_flipped_enemy.get_rect(center=(2700, 935))
+
+# DOG LEFT 
+enemy_left = pygame.image.load('./images/mydog.png')
+enemy_left = pygame.transform.scale(enemy_left,(240, 240))
+enemy_left_rect = enemy_left.get_rect(center=(-1000, 915))
 
 # VARIABLES FOR MUSIC INPUTS
 
@@ -58,7 +93,6 @@ m_key_pressed = False
 
 l_change = 0
 l_key_pressed = True
-
 
 # PAUSE MUSIC
 
@@ -131,9 +165,15 @@ going_left = False
 # GRAVITY
 
 GRAVITY = 2
-JUMP_VELOCITY = -30
+JUMP_VELOCITY = -40
 vertical_velocity = 20
 on_ground = True
+
+# DOG RANDOM 
+
+dog_respwaned = 0
+dog_left_respwaned = 0
+second_dog_respwaned = 0
 
 while True :
 
@@ -197,6 +237,12 @@ while True :
 
 # GRAVITY
     if key[pygame.K_SPACE] and on_ground:
+        if jump_change == 1: 
+            jump_sound2.play()
+            jump_change = 0
+        else : 
+            jump_sound.play()
+            jump_change = 1
         vertical_velocity = JUMP_VELOCITY
         on_ground = False
 
@@ -210,7 +256,7 @@ while True :
 
 # SCREEN SCROLLING WHEN X AXIS REACHED 
 
-    if player_rect.x >= 1300:
+    if player_rect.x >= 500:
         bg_x1 -= 20
         bg_x2 -= 20
 
@@ -219,15 +265,82 @@ while True :
     if bg_x2 <= -SCREEN_WIDTH:
         bg_x2 = SCREEN_WIDTH
 
+# SCREEN FLOOR SCROLLING
+
+    if player_rect.x >= 500:
+        bgf_x1 -= 5
+        bgf_x2 -= 5
+
+    if bgf_x1 <= -SCREEN_WIDTH:
+        bgf_x1 = SCREEN_WIDTH
+    if bgf_x2 <= -SCREEN_WIDTH:
+        bgf_x2 = SCREEN_WIDTH
+
+
 # ADDING GRAPHICS 
   
     screen.blit(background,(bg_x1,0))
     screen.blit(background,(bg_x2,0))   
-    screen.blit(floor, (0, 790))
+    screen.blit(floor, (bg_x1, 790))
+    screen.blit(floor, (bg_x2, 790))
+
     screen.blit(text_surface, text_center)
     screen.blit(text_music_surface, text_music_placement)
     screen.blit(text_change, text_change_placement)
     screen.blit(text_song_surface, text_song_placement)
+    screen.blit(flipped_enemy, enemy_rect)
+    screen.blit(second_flipped_enemy, second_enemy_rect)
+    screen.blit(enemy_left, enemy_left_rect)
+
+
+# ENEMY DEPLACEMENT AND RESPAWN
+
+    enemy_rect.x -= 30
+    if enemy_rect.x <= -300:
+        if dog_respwaned == 1:
+            dog_sound.play()
+            enemy_rect.x = 4500
+            dog_respwaned = 2
+        elif dog_respwaned == 2:
+            enemy_rect.x = 2000
+            dog_respwaned = 0
+        else:
+            enemy_rect.x = 3500
+            dog_respwaned = 1            
+
+# SECOND ENEMY RIGHT SIDE 
+
+    second_enemy_rect.x -= 24
+    if second_enemy_rect.x <= -300:
+        if second_dog_respwaned == 1:
+            second_enemy_rect.x = 4500
+            second_dog_respwaned = 2
+        elif second_dog_respwaned == 2:
+            second_enemy_rect.x = 2000
+            second_dog_respwaned = 0
+        else:
+            second_enemy_rect.x = 3500
+            second_dog_respwaned = 1     
+
+
+# ENEMY LEFT SIDE
+
+    enemy_left_rect.x += 20
+    if enemy_left_rect.x >= 2300:
+        if dog_left_respwaned == 1:
+            enemy_left_rect.x = -450
+            dog_left_respwaned = 2
+        elif dog_left_respwaned == 2:
+            enemy_left_rect.x = -200
+            dog_left_respwaned = 0
+        else:
+            enemy_left_rect.x = -300
+            dog_left_respwaned = 1            
+
+# ENEMY COLLISION 
+
+    if player_rect.x == enemy_rect.x: 
+        jump_sound.play()
 
 # FLIP WHEN GOING LEFT 
     
@@ -236,9 +349,6 @@ while True :
         screen.blit(flipped, player_rect)
     else:
         screen.blit(player, player_rect)
-
-
-
 
     pygame.display.flip()
     clock.tick(60)
